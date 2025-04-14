@@ -1,0 +1,272 @@
+<!-- Plant Information Form Section - Positioned at the same level as other main sections -->
+<section class="content mt-4" id="plantInfoSection">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card border-success">
+                    <div class="card-header bg-success">
+                        <h3 class="card-title text-white">
+                            <i class="fas fa-seedling mr-2"></i>
+                            Plant Information
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <?php if (isset($success_message)): ?>
+                            <div class="alert alert-success alert-message">
+                                <i class="fas fa-check-circle"></i> <?php echo $success_message; ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($error_message)): ?>
+                            <div class="alert alert-danger alert-message">
+                                <i class="fas fa-exclamation-circle"></i> <?php echo $error_message; ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <form id="plantInfoForm" method="POST">
+                            <div class="form-group">
+                                <label for="growth_id">Growth ID:</label>
+                                <select class="form-control" id="growth_id" name="growth_id">
+                                    <?php foreach ($growthInfoList as $growthInfo): ?>
+                                        <option value="<?php echo $growthInfo['growth_id']; ?>">
+                                            <?php echo $growthInfo['growth_id']; ?> (<?php echo $growthInfo['species']; ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="plant_label">Plant Label:</label>
+                                <input type="text" class="form-control" id="plant_label" name="plant_label" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="plant_condition_id">Plant Condition:</label>
+                                <select class="form-control" id="plant_condition_id" name="plant_condition_id">
+                                    <?php foreach ($plantConditions as $condition): ?>
+                                        <option value="<?php echo $condition['plant_condition_id']; ?>">
+                                            <?php echo $condition['condition_detail']; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="input_date">Input Date:</label>
+                                <input type="date" class="form-control" id="input_date" name="input_date" value="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                            <div class="form-group">
+                                <label for="img_loc">Image Location:</label>
+                                <input type="text" class="form-control" id="img_loc" name="img_loc">
+                            </div>
+                            <button type="submit" class="btn btn-success btn-lg btn-block" name="submit_plant_info">
+                                <i class="fas fa-save mr-2"></i>
+                                Save Plant Information
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadForm');
+    const detectButton = document.getElementById('detectButton');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const plantInfoForm = document.getElementById('plantInfoForm');
+    const plantConditionSelect = document.getElementById('plant_condition_id');
+    const imgLocInput = document.getElementById('img_loc');
+    const plantLabelInput = document.getElementById('plant_label');
+    const plantInfoSection = document.getElementById('plantInfoSection');
+    const growthIdSelect = document.getElementById('growth_id');
+    
+    // Make sure loading indicator is hidden on page load
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'none';
+    }
+    
+    // Initially hide the plant info section
+    if (plantInfoSection) {
+        plantInfoSection.style.display = 'none';
+    }
+    
+    // Add event listener for the show plant info button
+    const showPlantInfoBtn = document.getElementById('showPlantInfoBtn');
+    if (showPlantInfoBtn && plantInfoSection) {
+        showPlantInfoBtn.addEventListener('click', function() {
+            plantInfoSection.style.display = 'block';
+            plantInfoSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
+    
+    // Custom file input
+    const fileInput = document.querySelector('.custom-file-input');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'Choose file...';
+            const nextSibling = e.target.nextElementSibling;
+            nextSibling.innerText = fileName;
+
+            // Preview image
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    let previewContainer = document.querySelector('.preview-container');
+                    if (!previewContainer) {
+                        previewContainer = document.createElement('div');
+                        previewContainer.className = 'preview-container';
+                        const dropzoneForm = document.querySelector('.dropzone-form');
+                        dropzoneForm.insertBefore(previewContainer, dropzoneForm.querySelector('button'));
+                    } else {
+                        // Clear the existing preview
+                        previewContainer.innerHTML = '';
+                    }
+
+                    const preview = document.createElement('img');
+                    preview.className = 'img-fluid rounded mt-3';
+                    preview.style.maxHeight = '300px';
+                    preview.style.width = '100%';
+                    preview.style.objectFit = 'contain';
+                    preview.src = e.target.result;
+                    preview.alt = 'Image Preview';
+                    previewContainer.appendChild(preview);
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
+
+    // Function to extract plant condition ID from class name
+    function getPlantConditionIdFromClass(className) {
+        const match = className.match(/condition-(\d+)/);
+        return match ? match[1] : null;
+    }
+
+    // Set up event delegation for detection result clicks
+    if (resultsContainer) {
+        resultsContainer.addEventListener('click', function(e) {
+            // Check if clicked element or its parent has condition class
+            let element = e.target;
+            let conditionClass = null;
+            
+            // Look for an element with the condition class
+            for (let i = 0; i < 5; i++) { // Check up to 5 levels up the DOM tree
+                if (!element) break;
+                
+                const classes = element.className.split(' ');
+                for (const cls of classes) {
+                    if (cls.startsWith('condition-')) {
+                        conditionClass = cls;
+                        break;
+                    }
+                }
+                
+                if (conditionClass) break;
+                element = element.parentElement;
+            }
+            
+            if (conditionClass) {
+                const conditionId = getPlantConditionIdFromClass(conditionClass);
+                if (conditionId && plantConditionSelect) {
+                    plantConditionSelect.value = conditionId;
+                }
+            }
+        });
+    }
+
+    // Handle form submission
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'flex';
+            }
+            
+            if (detectButton) {
+                detectButton.disabled = true;
+            }
+            
+            const formData = new FormData(this);
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Find results container in the response
+                const newResultsContainer = doc.getElementById('resultsContainer');
+                if (newResultsContainer) {
+                    if (resultsContainer) {
+                        resultsContainer.innerHTML = newResultsContainer.innerHTML;
+                    }
+                    
+                    if (detectButton) {
+                        detectButton.disabled = false;
+                    }
+                    
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                    
+                    // Show the plant info section
+                    if (plantInfoSection) {
+                        plantInfoSection.style.display = 'block';
+                        
+                        // Scroll to the section
+                        plantInfoSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    
+                    // Automatically fill the image location input with the processed image path
+                    if (imgLocInput) {
+                        const imagePath = document.querySelector('[data-image-path]');
+                        if (imagePath) {
+                            const path = imagePath.getAttribute('data-image-path');
+                            imgLocInput.value = path;
+                        }
+                    }
+                } else {
+                    console.error('No results container found in the response');
+                    if (detectButton) {
+                        detectButton.disabled = false;
+                    }
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }
+                
+                // Re-initialize tooltips and other Bootstrap components
+                if (typeof $ !== 'undefined') {
+                    $('[data-toggle="tooltip"]').tooltip();
+                }
+            })
+            .catch(error => {
+                console.error('Error during fetch operation:', error);
+                if (detectButton) {
+                    detectButton.disabled = false;
+                }
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                alert('An error occurred during processing. Please try again.');
+            });
+        });
+    }
+    
+    // Disable submit button on plant info form submission
+    if (plantInfoForm) {
+        plantInfoForm.addEventListener('submit', function() {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+            }
+        });
+    }
+});
+</script>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Object Detection</title>
+</head>
+<body>
+    <h1>Upload Gambar untuk Prediksi</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="imageFile" name="file" accept="image/*" required />
+        <button type="submit">Upload and Predict</button>
+    </form>
+
+    <h2>Hasil Prediksi:</h2>
+    <pre id="predictionResults"></pre>
+
+    <!-- Tempat untuk menampilkan gambar hasil prediksi -->
+    <h2>Gambar Hasil Prediksi:</h2>
+    <img id="predictedImage" src="" alt="Predicted Image" style="max-width: 100%; display:none;" />
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData();
+            const fileInput = document.getElementById('imageFile');
+            formData.append("file", fileInput.files[0]);
+
+            fetch('http://127.0.0.1:5000/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Menampilkan hasil prediksi di dalam <pre>
+                document.getElementById('predictionResults').textContent = JSON.stringify(data.predictions, null, 2);
+                
+                // Menampilkan gambar hasil prediksi
+                const imgElement = document.getElementById('predictedImage');
+                imgElement.src = data.image_url; // Gambar yang sudah diproses oleh backend
+                imgElement.style.display = 'block'; // Menampilkan gambar setelah URL diset
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

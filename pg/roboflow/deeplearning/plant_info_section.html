@@ -1,0 +1,69 @@
+<!-- Plant Information Form -->
+<section class="content mt-4" id="plantInfoSection">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card border-success">
+                    <div class="card-header bg-success">
+                        <h3 class="card-title text-white">
+                            <i class="fas fa-seedling mr-2"></i>
+                            Plant Information
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <?php if (isset($success_message)): ?>
+                            <div class="alert alert-success alert-message">
+                                <i class="fas fa-check-circle"></i> <?php echo $success_message; ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($error_message)): ?>
+                            <div class="alert alert-danger alert-message">
+                                <i class="fas fa-exclamation-circle"></i> <?php echo $error_message; ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <form id="plantInfoForm" method="POST">
+                            <div class="form-group">
+                                <label for="growth_id">Growth ID:</label>
+                                <select class="form-control" id="growth_id" name="growth_id">
+                                    <?php foreach ($growthInfoList as $growthInfo): ?>
+                                        <option value="<?php echo $growthInfo['growth_id']; ?>">
+                                            <?php echo $growthInfo['growth_id']; ?> (<?php echo $growthInfo['species']; ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="plant_label">Plant Label:</label>
+                                <input type="text" class="form-control" id="plant_label" name="plant_label" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="plant_condition_id">Plant Condition:</label>
+                                <select class="form-control" id="plant_condition_id" name="plant_condition_id">
+                                    <?php foreach ($plantConditions as $condition): ?>
+                                        <option value="<?php echo $condition['plant_condition_id']; ?>">
+                                            <?php echo $condition['condition_detail']; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="input_date">Input Date:</label>
+                                <input type="date" class="form-control" id="input_date" name="input_date" value="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                            <div class="form-group">
+                                <label for="img_loc">Image Location:</label>
+                                <input type="text" class="form-control" id="img_loc" name="img_loc">
+                            </div>
+                            <button type="submit" class="btn btn-success btn-lg btn-block" name="submit_plant_info">
+                                <i class="fas fa-save mr-2"></i>
+                                Save Plant Information
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
